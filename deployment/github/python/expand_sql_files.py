@@ -1,4 +1,4 @@
-# script/expand_sql_files.py
+# devsecop/deployment/github/python/expand_sql_files.py
 
 import yaml
 import glob
@@ -8,9 +8,10 @@ import sys
 def main():
     baseline_no = os.environ.get("BASELINE_NO")
     if not baseline_no:
-        print("Missing baseline_no environment variable")
+        print("Missing BASELINE_NO environment variable")
         sys.exit(1)
 
+    # Must include 'init_repo/' now
     config_path = f"init_repo/script/execute_init/{baseline_no}/execute_init.yml"
     if not os.path.exists(config_path):
         print(f"Config file not found: {config_path}")
@@ -24,7 +25,7 @@ def main():
         for entry in entries:
             pattern = entry.get("path")
             if pattern:
-                matched = sorted(glob.glob(pattern))
+                matched = sorted(glob.glob(f"init_repo/{pattern}"))  # <<< fix to glob inside init_repo
                 ordered_sqls.extend(matched)
 
     with open("sql_file_list.txt", "w") as out:
