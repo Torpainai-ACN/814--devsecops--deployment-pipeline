@@ -123,11 +123,11 @@ jobs:
           while IFS= read -r file || [ -n "$file" ]; do
             echo " → Executing $file"
             PGPASSWORD="${{ env.AZURE_POSTGRES_PASSWORD }}" \
+            PGSSLMODE=require \
             psql \
               -h "${{ env.AZURE_POSTGRES_HOST_NAME }}.postgres.database.azure.com" \
               -U "${{ env.AZURE_POSTGRES_USERNAME }}" \
               -d "${{ env.AZURE_POSTGRES_DATABASE_NAME }}" \
-               "sslmode=require" \
               -v ON_ERROR_STOP=1 \
               --set=AUTOCOMMIT=on \
               -f "$file"
