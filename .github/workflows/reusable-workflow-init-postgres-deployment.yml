@@ -65,6 +65,7 @@ jobs:
           ref: main
           fetch-depth: 0
           token: ${{ secrets.GHE_DEVOPS_TOKEN }}
+          path: devsecop
 
       - name: Load environment variables from ${{ inputs.environment }} dotenv file
         run: |
@@ -77,6 +78,8 @@ jobs:
           ref: ${{ inputs.ref }}
           fetch-depth: 0
           token: ${{ secrets.GHE_DEVOPS_TOKEN }}
+          path: init_repo
+          
       - name: Install PostgreSQL client
         run: |
           sudo apt-get update
@@ -84,33 +87,25 @@ jobs:
 
       - name: Parse YAML and expand SQL files
         id: parse_sql
+        env:
+          BASELINE_NO: ${{ inputs.baseline_no }}
         run: |
-          python3 <<EOF
-          import yaml, glob, os
+          python3 devsecop/deployment/github/python/expand_sql_files.py
 
-          with open("script/execute_init/${{inputs.baseline_no}}/execute_init.yml") as f:
-              config = yaml.safe_load(f)
+      - name: Print expanded SQL file list
+        run: |
+          echo "✅ List of SQL files to execute:"
+          cat "${{ steps.parse_sql.outputs.sql_list_file }}"
 
-          ordered_sqls = []
-          for category in config.get("scripts", {}):
-              entries = config["scripts"][category]
-              for entry in entries:
-                  pattern = entry.get("path")
-                  if pattern:
-                      matched = sorted(glob.glob(pattern))
-                      ordered_sqls.extend(matched)
-
-          with open("sql_file_list.txt", "w") as out:
-              for path in ordered_sqls:
-                  out.write(f"{path}\n")
-
-          # Export as GitHub Action output
-          print("::set-output name=sql_list_file::sql_file_list.txt")
-          EOF
       - name: Execute SQL files via psql
         run: |
           echo "Running SQL files..."
-          while IFS= read -r file; do
+          while IFS= read -r file || [ -n "$file" ]; do
             echo " → Executing $file"
-            psql "host=${{ env.AZURE_POSTGRES_HOST_NAME }}.postgres.database.azure.com dbname=${{ env.AZURE_POSTGRES_DATABASE_NAME }} user=${{ env.AZURE_POSTGRES_USERNAME }} sslmode=require" -f "$file"
+            PGPASSWORD="${{ secrets.AZURE_POSTGRES_PASSWORD }}" \
+            psql \
+              -h "${{ env.AZURE_POSTGRES_HOST_NAME }}.postgres.database.azure.com" \
+              -U "${{ env.AZURE_POSTGRES_USERNAME }}" \
+              -d "${{ env.AZURE_POSTGRES_DATABASE_NAME }}" \
+              -f "$file"
           done < "${{ steps.parse_sql.outputs.sql_list_file }}"
