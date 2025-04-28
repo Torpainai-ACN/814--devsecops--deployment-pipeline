@@ -90,10 +90,6 @@ jobs:
       - name: Retrieve Secrets from Azure Key Vault
         run: |
           echo "AZURE_POSTGRES_PASSWORD=$(az keyvault secret show --name '${{ env.AZURE_POSTGRES_PASSWORD_KV }}' --vault-name '${{ env.AZURE_KEYVAULT_NAME }}' --query 'value' | jq -r)" >> $GITHUB_ENV
-         
-      - name : print password
-        run: |
-          echo "${{ env.AZURE_POSTGRES_PASSWORD }}"
 
       - name: Checkout ${{ inputs.ref }} of ${{ inputs.repository }} repository
         uses: actions/checkout@v4
@@ -128,7 +124,7 @@ jobs:
             echo " → Executing $file"
             PGPASSWORD="${{ env.AZURE_POSTGRES_PASSWORD }}" \
             psql \
-              -h "${{ env.AZURE_POSTGRES_HOST_NAME }}.postgres.database.azure.com" \
+              -h "${{ env.AZURE_POSTGRES_HOST_NAME }}" \
               -U "${{ env.AZURE_POSTGRES_USERNAME }}" \
               -d "${{ env.AZURE_POSTGRES_DATABASE_NAME }}" \
               -f "$file"
