@@ -93,7 +93,7 @@ jobs:
          
       - name : print password
         run: |
-          echo "${{ AZURE_POSTGRES_PASSWORD }}"
+          echo "${{ env.AZURE_POSTGRES_PASSWORD }}"
 
       - name: Checkout ${{ inputs.ref }} of ${{ inputs.repository }} repository
         uses: actions/checkout@v4
