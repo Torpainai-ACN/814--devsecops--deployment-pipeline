@@ -69,7 +69,7 @@ jobs:
 
       - name: Load environment variables from ${{ inputs.environment }} dotenv file
         run: |
-          cat ./dotenv/${{ inputs.environment }}.env >> $GITHUB_ENV
+          cat devsecop/dotenv/${{ inputs.environment }}.env >> $GITHUB_ENV
 
       - name: Checkout ${{ inputs.ref }} of ${{ inputs.repository }} repository
         uses: actions/checkout@v4
@@ -79,7 +79,7 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GHE_DEVOPS_TOKEN }}
           path: init_repo
-          
+
       - name: Install PostgreSQL client
         run: |
           sudo apt-get update
