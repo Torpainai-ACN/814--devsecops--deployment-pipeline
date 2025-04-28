@@ -71,6 +71,26 @@ jobs:
         run: |
           cat devsecop/dotenv/${{ inputs.environment }}.env >> $GITHUB_ENV
 
+      - name: Install pip and etc
+        run: |
+          pip install --upgrade pip
+          pip install jq
+          pip install yq
+
+      - name: Install Databricks CLI v0.213.0
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/v0.213.0/install.sh | sh
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: '{"clientId":"${{ secrets[env.AR_DEVOPS_CLIENT_ID] }}","clientSecret":"${{ secrets[env.AR_DEVOPS_CLIENT_SECRET] }}","subscriptionId":"${{ secrets[env.AR_DEVOPS_SUBSCRIPTION_ID] }}","tenantId":"${{ secrets[env.AR_DEVOPS_TENANT_ID] }}"}'
+          allow-no-subscriptions: true
+      
+      - name: Retrieve Secrets from Azure Key Vault
+        run: |
+          echo "AZURE_POSTGRES_PASSWORD=$(az keyvault secret show --name '${{ env.AZURE_POSTGRES_PASSWORD_KV }}' --vault-name '${{ env.AZURE_KEYVAULT_NAME }}' --query 'value' | jq -r)" >> $GITHUB_ENV
+         
       - name: Checkout ${{ inputs.ref }} of ${{ inputs.repository }} repository
         uses: actions/checkout@v4
         with:
@@ -102,7 +122,7 @@ jobs:
           echo "Running SQL files..."
           while IFS= read -r file || [ -n "$file" ]; do
             echo " → Executing $file"
-            PGPASSWORD="${{ secrets.AZURE_POSTGRES_PASSWORD }}" \
+            PGPASSWORD="${{ env.AZURE_POSTGRES_PASSWORD }}" \
             psql \
               -h "${{ env.AZURE_POSTGRES_HOST_NAME }}.postgres.database.azure.com" \
               -U "${{ env.AZURE_POSTGRES_USERNAME }}" \
